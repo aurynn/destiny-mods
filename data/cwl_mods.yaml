@@ -1,0 +1,355 @@
+all:
+  socket: combat
+
+buffs:
+  general:
+    - name: Charged Up
+      cost: 2
+      effect: bigger inventory
+    - name: Stacks on Stacks
+      effect: double pickup
+  solar:
+    - name: Supercharged
+      cost: 5
+      effect: bigger inventory
+
+
+creates:
+  general:
+    - name: Taking Charge
+      cost: 3
+      target: self
+      creates: cwl
+      from: orb
+      on: pickup
+    - name: Shield Break Charge
+      cost: 1
+      target: self
+      creates: cwl
+      on:
+        - event: shield break
+          target: enemy
+          constraint:
+            match: element
+    - name: Empowered Finish
+      cost: 1
+      creates: cwl
+      target: self
+      from:
+        source: super
+        amount: 10
+      on: finisher
+  solar:
+    - name: Blast Radius
+      cost: 3
+      on: kill
+      creates: cwl
+      target: self
+      constraint:
+        match: weapon
+        types:
+          - grenade launcher
+          - rocket launcher
+    - name: Sustained Charge
+      cost: 4
+      target: self
+      creates: cwl
+      on: kill
+      constraint:
+        match: weapon
+        types:
+          - auto rifle
+          - trace rifle
+          - machine gun
+      stacks: true
+
+  arc:
+    - name: Radiant Light
+      cost: 3
+      on: super
+      target: allies
+      creates: cwl
+      buffs:
+        type: stats
+        stats:
+          strength: 20
+    - name: Powerful Friends
+      cost: 4
+      on: cwl
+      target: allies
+      creates: cwl
+      buffs:
+        type: stats
+        stats:
+          mobility: 20
+    - name: Quick Charge
+      cost: 5
+      on: kill
+      target: self
+      creates: cwl
+      constraint:
+        match: weapon
+        types:
+          - fusion rifle
+          - shotgun
+    - name: Swift Charge
+      cost: 5
+      on: kill
+      target: self
+      creates: cwl
+      constraint:
+        match: weapon
+        types:
+          - pulse rifle
+          - sidearm
+          - submachine gun
+  void:
+    - name: Precisely Charged
+      cost: 1
+      on: kill
+      target: self
+      creates: cwl
+      constraint:
+        match: weapon
+        types:
+          - linear fusion rifle
+          - sniper rifle
+      buffs:
+        type: stats
+        stats:
+          discipline: -10
+    - name: Precision Charge
+      cost: 2
+      on: kill
+      target: self
+      creates: cwl
+      buffs:
+        type: stats
+        stats:
+          strength: -10
+      constraint:
+        match: weapon
+        types:
+          - bow
+          - hand cannon
+          - scout rifle
+    - name: Charge Harvester
+      cost: 3
+      buffs:
+        type: stats
+        stats:
+          mobility: -10
+          resilience: -10
+          recovery: -10
+      on:
+        - event: kill
+          random: true
+          cumulative: true
+        - event: assist
+          random: true
+          cumulative: true
+      target: self
+      creates: cwl
+
+uses:
+  general:
+    - name: High Energy Fire
+      cost: 4
+      from:
+        - source: cwl
+          amount: 1
+      buffs:
+        type: damage
+        constraint:
+          - match: weapon
+        until: kill
+  solar:
+    - name: Kindling the Flame
+      cost: 2
+      from:
+        source: cwl
+        amount: 1
+      creates: healing
+      on: revive
+    - name: Firepower
+      cost: 4
+      from:
+        - source: cwl
+          amount: 1
+      # thing it makes
+      creates: grenade
+      # thing it consumes
+      on: grenade
+    - name: Heal Thyself
+      cost: 4
+      from:
+        source: cwl
+        amount: 1
+      creates: healing
+      on:
+        event: kill
+        from: grenade
+    - name: Argent Ordnance
+      cost: 5
+      on:
+        - event: ready
+          from: weapon
+          buffs:
+            - type: damage
+            - type: reload speed
+          constraint:
+            match: weapon
+            types:
+              - rocket launcher
+        - event: fire
+          from: weapon
+          buffs:
+            - type: damage
+            - type: reload speed
+          constraint:
+            match: weapon
+            types:
+              - rocket launcher
+        - event: damage
+          from:
+            source: cwl
+            amount: 1
+          constraint:
+            match: weapon
+            types:
+              - rocket launcher
+  arc:
+    - name: Reactive Pulse
+      cost: 3
+      from:
+        - source: cwl
+          amount: 1
+      on:
+        event: damage
+        target: self
+      creates:
+        type: damage
+        damage:
+          range: melee
+          element: arc
+        constraint:
+          match: enemy
+          types:
+            - surrounded
+
+    - name: Lucent Blade
+      cost: 4
+      on: damage
+      from:
+        source: cwl
+        amount: 1
+      constraint:
+        match: weapon
+        types:
+          - sword
+      buffs:
+        type: damage
+        duration: 5
+        constraint:
+          match: weapon
+          types:
+            - sword
+    - name: Striking Light
+      cost: 5
+      creates: orb
+      on: damage
+      from:
+        - source: cwl
+          amount: 1
+      constraint:
+        - match: ability
+          types:
+            - melee
+        - match: weapon
+          types:
+            - sword
+    - name: Heavy Handed
+      cost: 7
+      creates:
+        type: melee
+        amount: 10
+      from:
+        # Requires both a powered melee
+        # _and_ a stack of CWL
+        - source: melee
+          amount: all
+        - source: cwl
+          amount: 1
+      on: melee
+  void:
+    - name: Surprise Attack
+      cost: 1
+      from:
+        - source: cwl
+          amount: all
+      on:
+        - event: reload
+        - event: ready
+      creates: stacks
+      buffs:
+        - type: damage
+          constraint:
+            match: weapon
+            types:
+              - sidearm
+        # yes this is represented as a buff, even though it's a debuff
+        # It makes sense
+        - type: stats
+          stats:
+            intellect: -10
+      constraint:
+        match: weapon
+        types:
+          - sidearm
+    - name: Protective Light
+      cost: 2
+      creates: stacks
+      from:
+        source: cwl
+        amount: all
+      on: shield break
+      target: self
+      buffs:
+        - type: resistance
+          # consumes: stacks
+          duration: variable
+        - type: stats
+          stats:
+            strength: -10
+    - name: Extra Reserves
+      cost: 3
+      creates: special ammo
+      target: self
+      from:
+          source: cwl
+          amount: all
+      on: kill
+      buffs:
+        - type: stats
+          stats:
+            intellect: -10
+      constraint:
+        match: element
+        types:
+          - void
+    - name: Energy Converter
+      cost: 4
+      from:
+        - source: cwl
+          amount: all
+        - source: grenade
+          amount: all
+      creates:
+        type: super
+        amount: 10 # assumes 10% per stack, 5 stacks max
+        max: 50
+      on: grenade
+      buffs:
+        - type: stats
+          stats:
+            discipline: -10
